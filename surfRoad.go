@@ -10,19 +10,60 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type event struct {
-	ID          string `json:"ID"`
-	Title       string `json:"Title"`
-	Description string `json:"Description"`
+// Structure du champ "fields"
+type Fields struct {
+	SurfBreak       []string `json:"Surf Break"`
+	DifficultyLevel int      `json:"Difficulty Level"`
+	Destination     string   `json:"Destination"`
+	Photos          []Photo  `json:"Photos"`
 }
 
-type allEvents []event
+// Structure pour les photos
+type Photo struct {
+	ID         string     `json:"id"`
+	URL        string     `json:"url"`
+	Filename   string     `json:"filename"`
+	Size       int        `json:"size"`
+	Type       string     `json:"type"`
+	Thumbnails Thumbnail  `json:"thumbnails"`
+}
 
-var events = allEvents{
+type Thumbnail struct {
+	Small ThumbnailSize `json:"small"`
+	Large ThumbnailSize `json:"large"`
+	Full  ThumbnailSize `json:"full"`
+}
+
+type ThumbnailSize struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+}
+
+// Structure pour un enregistrement (record)
+type Record struct {
+	ID     string `json:"id"`
+	Fields Fields `json:"fields"`
+}
+
+type AllRecords []Record
+
+var events = AllRecords{
 	{
-		ID:          "1",
-		Title:       "Introduction to Golang",
-		Description: "Come join us for a chance to learn how golang works and get to eventually try it out",
+		ID: "rec5aF9TjMjBicXCK",
+		Fields: Fields{
+			SurfBreak:       []string{"Reef Break"},
+			DifficultyLevel: 4,
+			Destination:     "Pipeline",
+		},
+	},
+	{
+		ID: "recT98Z2El7YYwmc4",
+		Fields: Fields{
+			SurfBreak:       []string{"Point Break"},
+			DifficultyLevel: 5,
+			Destination:     "Skeleton Bay",
+		},
 	},
 }
 
@@ -31,7 +72,7 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func createEvent(w http.ResponseWriter, r *http.Request) {
-	var newEvent event
+	var newEvent Record
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(w, "Kindly enter data with the event title and description only in order to update")
@@ -42,7 +83,7 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(newEvent)
-}
+            }
 
 func getOneEvent(w http.ResponseWriter, r *http.Request) {
 	eventID := mux.Vars(r)["id"]
@@ -60,7 +101,7 @@ func getAllEvents(w http.ResponseWriter, r *http.Request) {
 
 func updateEvent(w http.ResponseWriter, r *http.Request) {
 	eventID := mux.Vars(r)["id"]
-	var updatedEvent event
+	var updatedEvent Record
 
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -70,10 +111,8 @@ func updateEvent(w http.ResponseWriter, r *http.Request) {
 
 	for i, singleEvent := range events {
 		if singleEvent.ID == eventID {
-			singleEvent.Title = updatedEvent.Title
-			singleEvent.Description = updatedEvent.Description
-			events = append(events[:i], singleEvent)
-			json.NewEncoder(w).Encode(singleEvent)
+			events[i] = updatedEvent
+			json.NewEncoder(w).Encode(updatedEvent)
 		}
 	}
 }
@@ -100,7 +139,3 @@ func main() {
 	router.HandleFunc("/events/{id}", deleteEvent).Methods("DELETE")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
-
-
-
-
