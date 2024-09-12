@@ -1,33 +1,106 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func main() {
-	fmt.Println("Building Rest APIs in Go 1.23.1!!")
+type event struct {
+	ID          string `json:"ID"`
+	Title       string `json:"Title"`
+	Description string `json:"Description"`
+}
 
-	mux := http.NewServeMux()
+type allEvents []event
 
-	mux.HandleFunc("GET /comment", func(w http.ResponseWriter, r *http.Request){
+var events = allEvents{
+	{
+		ID:          "1",
+		Title:       "Introduction to Golang",
+		Description: "Come join us for a chance to learn how golang works and get to eventually try it out",
+	},
+}
 
-		fmt.Fprint(w, "return all comments")
-	})
+func homeLink(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome home!")
+}
 
-	mux.HandleFunc("GET /comment/{id}", func(w http.ResponseWriter, r *http.Request){
-		id := r.PathValue("id")
-		fmt.Fprint(w, "return a single comment for comment with id: %s", id)
-	})
-
-	mux.HandleFunc("POST /comment", func(w http.ResponseWriter, r *http.Request){
-
-		fmt.Fprint(w, "post a new comment")
-	})
-
-	if err := http.ListenAndServe("localhost:8080", mux); err != nil {
-		fmt.Println(err.Error())
-
+func createEvent(w http.ResponseWriter, r *http.Request) {
+	var newEvent event
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "Kindly enter data with the event title and description only in order to update")
 	}
 	
+	json.Unmarshal(reqBody, &newEvent)
+	events = append(events, newEvent)
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(newEvent)
 }
+
+func getOneEvent(w http.ResponseWriter, r *http.Request) {
+	eventID := mux.Vars(r)["id"]
+
+	for _, singleEvent := range events {
+		if singleEvent.ID == eventID {
+			json.NewEncoder(w).Encode(singleEvent)
+		}
+	}
+}
+
+func getAllEvents(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(events)
+}
+
+func updateEvent(w http.ResponseWriter, r *http.Request) {
+	eventID := mux.Vars(r)["id"]
+	var updatedEvent event
+
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "Kindly enter data with the event title and description only in order to update")
+	}
+	json.Unmarshal(reqBody, &updatedEvent)
+
+	for i, singleEvent := range events {
+		if singleEvent.ID == eventID {
+			singleEvent.Title = updatedEvent.Title
+			singleEvent.Description = updatedEvent.Description
+			events = append(events[:i], singleEvent)
+			json.NewEncoder(w).Encode(singleEvent)
+		}
+	}
+}
+
+func deleteEvent(w http.ResponseWriter, r *http.Request) {
+	eventID := mux.Vars(r)["id"]
+
+	for i, singleEvent := range events {
+		if singleEvent.ID == eventID {
+			events = append(events[:i], events[i+1:]...)
+			fmt.Fprintf(w, "The event with ID %v has been deleted successfully", eventID)
+		}
+	}
+}
+
+func main() {
+	//initEvents()
+	router := mux.NewRouter().StrictSlash(true)
+	router.HandleFunc("/", homeLink)
+	router.HandleFunc("/event", createEvent).Methods("POST")
+	router.HandleFunc("/events", getAllEvents).Methods("GET")
+	router.HandleFunc("/events/{id}", getOneEvent).Methods("GET")
+	router.HandleFunc("/events/{id}", updateEvent).Methods("PATCH")
+	router.HandleFunc("/events/{id}", deleteEvent).Methods("DELETE")
+	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+
+
+
