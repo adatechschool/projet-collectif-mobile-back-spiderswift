@@ -6,6 +6,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"gorm.io/gorm"
+    "gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 
 	"github.com/gorilla/mux"
 )
@@ -20,12 +23,12 @@ type Fields struct {
 
 // Structure pour les photos
 type Photo struct {
-	ID         string     `json:"id"`
-	URL        string     `json:"url"`
-	Filename   string     `json:"filename"`
-	Size       int        `json:"size"`
-	Type       string     `json:"type"`
-	Thumbnails Thumbnail  `json:"thumbnails"`
+	ID         string    `json:"id"`
+	URL        string    `json:"url"`
+	Filename   string    `json:"filename"`
+	Size       int       `json:"size"`
+	Type       string    `json:"type"`
+	Thumbnails Thumbnail `json:"thumbnails"`
 }
 
 type Thumbnail struct {
@@ -77,13 +80,13 @@ func createEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Fprintf(w, "Kindly enter data with the event title and description only in order to update")
 	}
-	
+
 	json.Unmarshal(reqBody, &newEvent)
 	events = append(events, newEvent)
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(newEvent)
-            }
+}
 
 func getOneEvent(w http.ResponseWriter, r *http.Request) {
 	eventID := mux.Vars(r)["id"]
