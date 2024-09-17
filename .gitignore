@@ -20,5 +20,7 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+#Golang
+/go.sum
 #Apple
-.DS_Store
+/.DS_Store
