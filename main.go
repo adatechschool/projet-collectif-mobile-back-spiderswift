@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// Migration des tables
-	db.AutoMigrate(&models.Parking{})
+	db.AutoMigrate(&models.SurfSpots{})
 
 	// Passer l'instance de la base de données au contrôleur
 	controllers.Setup(db)
@@ -39,7 +39,7 @@ func main() {
 	router := gin.Default()
 
 	// Configuration des routes
-	routes.SetupRoutes(router, db)
+	routes.SetupSurfSpots(router, db)
 
 	// Lancer le serveur
 	router.Run(":8080")
